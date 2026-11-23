@@ -12,9 +12,12 @@ import dotenv from 'dotenv';
 import { resolveConfig } from './config/resolver.js';
 import { getMode } from './mode.js';
 import {
+  CLAUDE_CODE_OAUTH_TOKEN_ENV,
   CURATED_PROVIDERS,
   type CuratedProviderId,
+  claudeSubscriptionTokenError,
   GENERIC_API_KEY_ENV,
+  isClaudeSubscriptionToken,
   isCuratedProvider,
   PROVIDER_API_KEY_ENV,
   PROVIDER_CREDENTIAL_HINT,
@@ -142,6 +145,38 @@ function hasCredential(providerId: string): boolean {
   return Boolean(process.env[GENERIC_API_KEY_ENV]);
 }
 
+/**
+ * The env var whose value the worker will send as the selected provider's API key,
+ * following the worker's precedence: the curated provider's own variables, then the
+ * generic key. Bedrock authenticates through its AWS_ variables and has none.
+ */
+function sentApiKeyVar(providerId: string): string | undefined {
+  if (providerId === 'amazon-bedrock') return undefined;
+  const namedVars = isCuratedProvider(providerId) ? PROVIDER_API_KEY_ENV[providerId] : [];
+  return [...namedVars, GENERIC_API_KEY_ENV].find((name) => Boolean(process.env[name]));
+}
+
+/**
+ * Explain why the run would send a Claude Code subscription token, or undefined when it
+ * would not. Covers a token pasted into the key variable the worker sends, and a lone
+ * CLAUDE_CODE_OAUTH_TOKEN left over from a Claude Agent SDK release of Shannon, which
+ * would otherwise surface as a puzzling "no credentials" error.
+ */
+function describeClaudeSubscriptionToken(providerId: string): string | undefined {
+  const sentVar = sentApiKeyVar(providerId);
+  const sentValue = sentVar ? process.env[sentVar] : undefined;
+  if (sentVar && sentValue && isClaudeSubscriptionToken(sentValue)) {
+    return claudeSubscriptionTokenError(sentVar);
+  }
+
+  const onlyOAuthTokenSet = providerId === 'anthropic' && !sentVar && Boolean(process.env[CLAUDE_CODE_OAUTH_TOKEN_ENV]);
+  if (onlyOAuthTokenSet) {
+    return claudeSubscriptionTokenError(CLAUDE_CODE_OAUTH_TOKEN_ENV);
+  }
+
+  return undefined;
+}
+
 /** Curated providers with a named credential. The generic key is neutral, so it never counts toward ambiguity. */
 function configuredProviders(): CuratedProviderId[] {
   return CURATED_PROVIDERS.filter((providerId) => hasNamedCredential(providerId));
@@ -202,12 +237,19 @@ export function validateCredentials(): CredentialValidation {
     return { valid: true };
   }
 
-  // 2. The selected provider must have a credential
+  // 2. A Claude Code subscription token must not be the credential. pi sends it on
+  //    Anthropic's OAuth path, which bills a third-party harness to extra usage.
+  const subscriptionTokenError = describeClaudeSubscriptionToken(spec.providerId);
+  if (subscriptionTokenError) {
+    return { valid: false, error: subscriptionTokenError };
+  }
+
+  // 3. The selected provider must have a credential
   if (!hasCredential(spec.providerId)) {
     return { valid: false, error: describeMissingCredential(spec.providerId) };
   }
 
-  // 3. Exactly one provider may be configured. Several complete credentials make
+  // 4. Exactly one provider may be configured. Several complete credentials make
   //    the scan's provider depend on SHANNON_AI_MODEL alone, which is too easy to
   //    misread as "both are in play" and too easy to redirect by editing one line.
   const configured = configuredProviders();

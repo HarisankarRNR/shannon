@@ -284,7 +284,7 @@ async function probeCredentialsWithPi(
 
 /** Credential env var a curated provider reads, for "credential missing" messages. */
 const PROVIDER_CREDENTIAL_HINT: Readonly<Record<CuratedProviderId, string>> = {
-  anthropic: 'ANTHROPIC_API_KEY (or CLAUDE_CODE_OAUTH_TOKEN)',
+  anthropic: 'ANTHROPIC_API_KEY',
   openai: 'OPENAI_API_KEY',
   xai: 'XAI_API_KEY',
   'amazon-bedrock': 'AWS_BEARER_TOKEN_BEDROCK and AWS_REGION',

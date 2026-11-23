@@ -107,7 +107,7 @@ Published as `@keygraph/shannon` on npm. Contains Docker orchestration and a dir
 - `apps/cli/src/mode.ts` — Auto-detection: local mode if `SHANNON_LOCAL=1` env var is set
 - `apps/cli/src/docker.ts` — Compose lifecycle, image pull/build, and ephemeral `docker run` worker spawning. Each worker carries workspace, task-queue, and preselected workflow-ID labels so stop can correlate the local worker with its Temporal execution before `session.json` exists. Before `docker run`, start fsyncs that exact candidate under the workspace's hidden internals and clears it only when `session.json` registers the same ID; stop reconciles any candidate left by an interrupted launch. Start also checks the image's workflow-ID protocol label and refuses a stale worker that would ignore the preselected ID
 - `apps/cli/src/home.ts` — State directory management (`~/.shannon/` for npx, `./` for local)
-- `apps/cli/src/env.ts` — `.env` loading, TOML fallback (npx only) via `apps/cli/src/config/resolver.ts`, credential validation, provider-scoped env flag building
+- `apps/cli/src/env.ts` — `.env` loading, TOML fallback (npx only) via `apps/cli/src/config/resolver.ts`, credential validation (refuses a Claude Code subscription token, `sk-ant-oat…`, before any Docker work: Anthropic bills one sent from pi to metered extra usage rather than the plan), provider-scoped env flag building
 - `apps/cli/src/model-spec.ts` — `SHANNON_AI_MODEL` (`<provider>:<model-id>`) parsing; mirrors `apps/worker/src/ai/models.ts`
 - `apps/cli/src/config/resolver.ts` — Cascading config (npx only): env vars → `~/.shannon/config.toml` (parsed with `smol-toml`)
 - `apps/cli/src/config/writer.ts` — TOML serialization and secure file persistence (0o600)

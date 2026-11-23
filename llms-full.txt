@@ -799,7 +799,7 @@ The provider half decides where the request goes, which credential is used, and 
 
 | Provider | Value | Credential |
 | --- | --- | --- |
-| Anthropic | `anthropic` | `SHANNON_AI_API_KEY` (or `CLAUDE_CODE_OAUTH_TOKEN`) |
+| Anthropic | `anthropic` | `SHANNON_AI_API_KEY` |
 | OpenAI | `openai` | `SHANNON_AI_API_KEY` |
 | xAI | `xai` | `SHANNON_AI_API_KEY` |
 | AWS Bedrock | `amazon-bedrock` | `AWS_REGION` and `AWS_BEARER_TOKEN_BEDROCK` |
@@ -1107,6 +1107,8 @@ The suggested Grok model is `grok-4.7`.
 ## Claude Code subscription
 
 The latest version of Shannon does not support Claude Code subscriptions. The [`shannon-v1`](https://github.com/KeygraphHQ/shannon/tree/shannon-v1) branch is the final release built on the Claude Agent SDK and supports Claude Code OAuth.
+
+Anthropic bills a Claude Code subscription token used outside Claude Code to metered extra usage rather than your plan, so the latest version refuses one before a scan starts, whether it is set as `CLAUDE_CODE_OAUTH_TOKEN`, saved as `oauth_token` in the `[anthropic]` section of `~/.shannon/config.toml`, or pasted into `ANTHROPIC_API_KEY` or `SHANNON_AI_API_KEY`.
 
 Before running a pentest, review the [cyber safeguards requirements](#cyber-safeguards-do-this-before-your-first-scan).
 

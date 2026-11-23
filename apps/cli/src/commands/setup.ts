@@ -10,7 +10,12 @@ import os from 'node:os';
 import path from 'node:path';
 import * as p from '@clack/prompts';
 import { type ShannonConfig, saveConfig } from '../config/writer.js';
-import { CURATED_PROVIDERS, type CuratedProviderId, isCuratedProvider } from '../model-spec.js';
+import {
+  CURATED_PROVIDERS,
+  type CuratedProviderId,
+  isClaudeSubscriptionToken,
+  isCuratedProvider,
+} from '../model-spec.js';
 import { displaySplash } from '../splash.js';
 import { requireInteractive } from '../tty.js';
 import { getVersion } from '../version.js';
@@ -177,21 +182,17 @@ async function setupOtherProvider(): Promise<Selection> {
 // === Provider Setup Flows ===
 
 async function setupAnthropic(): Promise<ShannonConfig> {
-  const authMethod = await p.select({
-    message: 'Authentication method',
-    options: [
-      { value: 'api_key' as const, label: 'API Key' },
-      { value: 'oauth' as const, label: 'OAuth Token' },
-    ],
+  const apiKey = await p.password({
+    message: 'Enter your Anthropic API key',
+    validate: (value) => {
+      if (!value) return 'Anthropic API key is required';
+      if (isClaudeSubscriptionToken(value)) {
+        return 'This is a Claude Code subscription token, which this version of Shannon does not support. Enter an Anthropic API key.';
+      }
+      return undefined;
+    },
   });
-  if (p.isCancel(authMethod)) return cancelAndExit();
-
-  if (authMethod === 'oauth') {
-    const token = await promptSecret('Enter your OAuth token');
-    return { anthropic: { oauth_token: token } };
-  }
-
-  const apiKey = await promptSecret('Enter your Anthropic API key');
+  if (p.isCancel(apiKey)) return cancelAndExit();
   return { anthropic: { api_key: apiKey } };
 }
 

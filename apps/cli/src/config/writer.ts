@@ -9,7 +9,7 @@ import { getConfigFile } from '../home.js';
 
 export interface ShannonConfig {
   core?: { model?: string; base_url?: string };
-  anthropic?: { api_key?: string; oauth_token?: string };
+  anthropic?: { api_key?: string };
   openai?: { api_key?: string };
   xai?: { api_key?: string };
   bedrock?: { region?: string; token?: string };

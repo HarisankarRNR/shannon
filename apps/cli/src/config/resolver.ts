@@ -12,6 +12,7 @@ import { getConfigFile } from '../home.js';
 import { getMode } from '../mode.js';
 import {
   type CuratedProviderId,
+  claudeSubscriptionTokenError,
   DEFAULT_MODEL_SPEC,
   GENERIC_API_KEY_ENV,
   isCuratedProvider,
@@ -38,7 +39,6 @@ const CONFIG_MAP: readonly ConfigMapping[] = [
 
   // Anthropic
   { env: 'ANTHROPIC_API_KEY', toml: 'anthropic.api_key', type: 'string' },
-  { env: 'CLAUDE_CODE_OAUTH_TOKEN', toml: 'anthropic.oauth_token', type: 'string' },
 
   // OpenAI
   { env: 'OPENAI_API_KEY', toml: 'openai.api_key', type: 'string' },
@@ -159,13 +159,6 @@ function validateProviderFields(config: TOMLConfig, providerId: string, errors: 
     return;
   }
 
-  if (providerId === 'anthropic') {
-    if (!keys.includes('api_key') && !keys.includes('oauth_token')) {
-      errors.push('[anthropic] requires either api_key or oauth_token');
-    }
-    return;
-  }
-
   if (!keys.includes('api_key')) {
     errors.push(`[${sectionName}] requires api_key`);
   }
@@ -196,6 +189,12 @@ function validateConfig(config: TOMLConfig): string[] {
 
     // 3. Validate each key in the section
     for (const [key, value] of Object.entries(sectionObj as Record<string, unknown>)) {
+      // A Claude Code OAuth token saved by a Claude Agent SDK release of Shannon
+      if (section === 'anthropic' && key === 'oauth_token') {
+        errors.push(claudeSubscriptionTokenError('[anthropic].oauth_token'));
+        continue;
+      }
+
       const expectedType = allowedKeys.get(key);
       if (!expectedType) {
         const known = [...allowedKeys.keys()].join(', ');
@@ -278,7 +277,7 @@ export function resolveConfig(): void {
   if (errors.length > 0) {
     fail(
       'Invalid configuration:',
-      ...errors.map((err) => `  - ${err}`),
+      ...errors.map((err) => `  - ${err.replaceAll('\n', '\n    ')}`),
       `Run 'npx @keygraph/shannon setup' to reconfigure.`,
     );
   }

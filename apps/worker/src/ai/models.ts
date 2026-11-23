@@ -74,7 +74,7 @@ export const GENERIC_API_KEY_ENV = 'SHANNON_AI_API_KEY';
  * credential the CLI never forwarded, and preflight reports it as absent.
  */
 export const PROVIDER_API_KEY_ENV: Readonly<Record<CuratedProviderId, readonly string[]>> = {
-  anthropic: ['ANTHROPIC_API_KEY', 'CLAUDE_CODE_OAUTH_TOKEN'],
+  anthropic: ['ANTHROPIC_API_KEY'],
   openai: ['OPENAI_API_KEY'],
   xai: ['XAI_API_KEY'],
   'amazon-bedrock': ['AWS_BEARER_TOKEN_BEDROCK'],
